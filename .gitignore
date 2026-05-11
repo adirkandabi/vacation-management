@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment and secrets (never commit real credentials)
+.env
+.env.*.local
+
+# Logs and caches
+*.log
+npm-debug.log*
+.cache/
+
+# Test / coverage
+coverage/
+
+# OS / editor (optional; trim if your team commits editor config)
+.DS_Store
+Thumbs.db
+
+# Vue / Vite (client) — harmless if client not present yet
+.vite/
+*.local
