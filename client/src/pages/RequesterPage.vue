@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { createVacationRequest, listMyVacationRequests } from '../api/vacationRequests'
+import { createVacationRequest, deleteVacationRequest, listMyVacationRequests } from '../api/vacationRequests'
 import { getMyUser } from '../api/users'
 import type { VacationRequestDto, UserDto } from '../api/types'
 import { useDemoUser } from '../composables/useDemoUser'
@@ -67,6 +67,26 @@ async function submit() {
       e?.response?.data?.error ||
       e?.message ||
       'Failed to create request'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function removeRequest(r: VacationRequestDto) {
+  if (r.status !== 'Pending') return
+  const ok = confirm('Delete this pending request?')
+  if (!ok) return
+
+  loading.value = true
+  error.value = null
+  try {
+    await deleteVacationRequest(r.id)
+    await refresh()
+  } catch (e: any) {
+    error.value =
+      e?.response?.data?.error ||
+      e?.message ||
+      'Failed to delete request'
   } finally {
     loading.value = false
   }
@@ -176,6 +196,7 @@ onMounted(refresh)
                 <th>Status</th>
                 <th>Reason</th>
                 <th>Comments</th>
+                <th class="actions-col"></th>
               </tr>
             </thead>
             <tbody>
@@ -189,6 +210,17 @@ onMounted(refresh)
                 </td>
                 <td class="muted">{{ r.reason || '—' }}</td>
                 <td class="muted">{{ r.comments || '—' }}</td>
+                <td class="row-actions">
+                  <button
+                    v-if="r.status === 'Pending'"
+                    class="btn btn-danger"
+                    type="button"
+                    :disabled="loading"
+                    @click="removeRequest(r)"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -411,6 +443,20 @@ onMounted(refresh)
 .badge-rejected {
   background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.35);
+}
+
+.actions-col {
+  width: 1%;
+}
+
+.row-actions {
+  text-align: right;
+}
+
+.btn-danger {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--text-h);
 }
 </style>
 

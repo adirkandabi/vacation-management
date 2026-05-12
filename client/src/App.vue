@@ -7,7 +7,7 @@ import { RouterLink, RouterView } from 'vue-router'
     <header class="topbar">
       <div class="brand">Vacation Management</div>
       <nav class="nav">
-        <RouterLink to="/" class="nav-link">Requester</RouterLink>
+        <RouterLink to="/requester" class="nav-link">Requester</RouterLink>
       </nav>
     </header>
 

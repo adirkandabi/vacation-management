@@ -16,3 +16,7 @@ export async function createVacationRequest(input: {
   return res.data
 }
 
+export async function deleteVacationRequest(id: number): Promise<void> {
+  await http.delete(`/api/vacation-requests/${id}`)
+}
+
