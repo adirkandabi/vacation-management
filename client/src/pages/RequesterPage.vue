@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useDemoUser } from '../composables/useDemoUser'
 import { useRequester } from '../composables/useRequester'
+import { formatTimestampToDdMmYyyy, formatYmdToDdMmYyyy } from '../utils/dateDisplay'
 
 const { userId, hasUser } = useDemoUser()
 
@@ -14,8 +15,18 @@ const {
   endDate,
   reason,
   canSubmit,
+  editingId,
+  editStart,
+  editEnd,
+  editReason,
+  minYmd,
+  newEndMin,
+  editEndMin,
   refresh,
   submit,
+  beginEdit,
+  cancelEdit,
+  saveEdit,
   removeRequest,
   statusBadgeClass,
 } = useRequester()
@@ -90,11 +101,11 @@ watch(userId, (val) => {
           <div class="form-grid">
             <div>
               <label class="label" for="start">Start date *</label>
-              <input id="start" class="input" type="date" v-model="startDate" />
+              <input id="start" class="input" type="date" v-model="startDate" :min="minYmd" />
             </div>
             <div>
               <label class="label" for="end">End date *</label>
-              <input id="end" class="input" type="date" v-model="endDate" />
+              <input id="end" class="input" type="date" v-model="endDate" :min="newEndMin" />
             </div>
           </div>
 
@@ -148,24 +159,58 @@ watch(userId, (val) => {
             <tbody>
               <tr v-for="r in requests" :key="r.id">
                 <td>
-                  <div class="dates">{{ r.startDate }} → {{ r.endDate }}</div>
-                  <div class="meta">#{{ r.id }} • {{ new Date(r.createdAt).toLocaleString() }}</div>
+                  <template v-if="editingId === r.id">
+                    <div class="edit-dates">
+                      <input class="input" type="date" v-model="editStart" :min="minYmd" />
+                      <span class="date-sep">→</span>
+                      <input class="input" type="date" v-model="editEnd" :min="editEndMin" />
+                    </div>
+                    <div class="meta">#{{ r.id }} • {{ formatTimestampToDdMmYyyy(r.createdAt) }}</div>
+                  </template>
+                  <template v-else>
+                    <div class="dates">{{ formatYmdToDdMmYyyy(r.startDate) }} → {{ formatYmdToDdMmYyyy(r.endDate) }}</div>
+                    <div class="meta">#{{ r.id }} • {{ formatTimestampToDdMmYyyy(r.createdAt) }}</div>
+                  </template>
                 </td>
                 <td>
                   <span :class="statusBadgeClass(r.status)">{{ r.status }}</span>
                 </td>
-                <td class="muted">{{ r.reason || '—' }}</td>
+                <td class="muted">
+                  <textarea
+                    v-if="editingId === r.id"
+                    class="textarea edit-reason"
+                    rows="2"
+                    v-model="editReason"
+                    placeholder="Reason (optional)"
+                  />
+                  <template v-else>{{ r.reason || '—' }}</template>
+                </td>
                 <td class="muted">{{ r.comments || '—' }}</td>
                 <td class="row-actions">
-                  <button
-                    v-if="r.status === 'Pending'"
-                    class="btn btn-danger"
-                    type="button"
-                    :disabled="loading"
-                    @click="removeAndRefresh(r)"
-                  >
-                    Delete
-                  </button>
+                  <div v-if="r.status === 'Pending'" class="action-row">
+                    <template v-if="editingId === r.id">
+                      <button class="btn btn-primary" type="button" :disabled="loading" @click="saveEdit">
+                        Save
+                      </button>
+                      <button class="btn" type="button" :disabled="loading" @click="cancelEdit">
+                        Cancel
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button class="btn btn-primary" type="button" :disabled="loading" @click="beginEdit(r)">
+                        Edit
+                      </button>
+                    </template>
+                    <button
+                      v-if="editingId !== r.id"
+                      class="btn btn-danger"
+                      type="button"
+                      :disabled="loading"
+                      @click="removeAndRefresh(r)"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -397,6 +442,34 @@ watch(userId, (val) => {
 
 .row-actions {
   text-align: right;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.edit-dates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.edit-dates .input {
+  width: auto;
+  min-width: 140px;
+}
+
+.date-sep {
+  color: var(--text);
+}
+
+.edit-reason {
+  min-height: 48px;
+  resize: vertical;
 }
 
 .btn-danger {

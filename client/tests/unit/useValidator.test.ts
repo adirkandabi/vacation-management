@@ -47,5 +47,30 @@ describe('useValidator', () => {
     await v.approve({ id: 1, status: 'Approved' } as any)
     expect(approveVacationRequest).not.toHaveBeenCalled()
   })
+
+  it('approve calls API then refreshes list', async () => {
+    ;(approveVacationRequest as any).mockResolvedValue({ id: 1, status: 'Approved' })
+    ;(listAllVacationRequests as any).mockResolvedValue([{ id: 1, status: 'Approved' }])
+
+    const v = useValidator()
+    v.filterStatus.value = 'All'
+    await v.approve({ id: 1, status: 'Pending' } as any)
+
+    expect(approveVacationRequest).toHaveBeenCalledWith(1)
+    expect(listAllVacationRequests).toHaveBeenCalled()
+  })
+
+  it('confirmReject calls API then refreshes list', async () => {
+    ;(rejectVacationRequest as any).mockResolvedValue({ id: 2, status: 'Rejected' })
+    ;(listAllVacationRequests as any).mockResolvedValue([])
+
+    const v = useValidator()
+    v.rejectId.value = 2
+    v.rejectComment.value = 'No coverage'
+    await v.confirmReject()
+
+    expect(rejectVacationRequest).toHaveBeenCalledWith(2, 'No coverage')
+    expect(listAllVacationRequests).toHaveBeenCalled()
+  })
 })
 

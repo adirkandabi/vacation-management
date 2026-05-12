@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { ensureValidatorUser, useValidatorUser } from '../composables/useValidatorUser'
 import { useValidator } from '../composables/useValidator'
+import { formatTimestampToDdMmYyyy, formatYmdToDdMmYyyy } from '../utils/dateDisplay'
 
 const { validatorUser, ready, loading: resolvingUser, error: resolveError } = useValidatorUser()
 
@@ -103,8 +104,8 @@ onMounted(async () => {
                 <div class="meta">UserId: {{ r.userId }}</div>
               </td>
               <td>
-                <div class="dates">{{ r.startDate }} → {{ r.endDate }}</div>
-                <div class="meta">#{{ r.id }} • {{ new Date(r.createdAt).toLocaleString() }}</div>
+                <div class="dates">{{ formatYmdToDdMmYyyy(r.startDate) }} → {{ formatYmdToDdMmYyyy(r.endDate) }}</div>
+                <div class="meta">#{{ r.id }} • {{ formatTimestampToDdMmYyyy(r.createdAt) }}</div>
               </td>
               <td>
                 <span :class="statusBadgeClass(r.status)">{{ r.status }}</span>

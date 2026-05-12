@@ -6,7 +6,11 @@ import {
   VacationRequest,
   VacationRequestStatus,
 } from '../entities';
-import { assertEndOnOrAfterStart, parseIsoDateOnly } from '../utils/dateValidation';
+import {
+  assertEndOnOrAfterStart,
+  assertStartEndNotInPast,
+  parseIsoDateOnly,
+} from '../utils/dateValidation';
 
 const requestRepo = () => AppDataSource.getRepository(VacationRequest);
 const userRepo = () => AppDataSource.getRepository(User);
@@ -140,6 +144,7 @@ export async function createVacationRequest(
     );
   }
   assertEndOnOrAfterStart(startDate, endDate);
+  assertStartEndNotInPast(startDate, endDate);
 
   let reason: string | null = null;
   if (body.reason !== undefined && body.reason !== null) {
@@ -199,6 +204,7 @@ export async function updateVacationRequest(
     throw new AppError(500, 'Invalid date state');
   }
   assertEndOnOrAfterStart(start, end);
+  assertStartEndNotInPast(start, end);
 
   row.startDate = start;
   row.endDate = end;

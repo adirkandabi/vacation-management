@@ -42,6 +42,7 @@ export function useValidator() {
     error.value = null
     try {
       await approveVacationRequest(r.id)
+      await refresh()
     } catch (e: any) {
       error.value = toMessage(e, 'Failed to approve')
     } finally {
@@ -72,6 +73,7 @@ export function useValidator() {
     try {
       await rejectVacationRequest(rejectId.value, comment)
       cancelReject()
+      await refresh()
     } catch (e: any) {
       error.value = toMessage(e, 'Failed to reject')
     } finally {

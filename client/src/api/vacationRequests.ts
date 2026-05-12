@@ -20,6 +20,14 @@ export async function deleteVacationRequest(id: number): Promise<void> {
   await http.delete(`/api/vacation-requests/${id}`)
 }
 
+export async function updateVacationRequest(
+  id: number,
+  body: { startDate?: string; endDate?: string; reason?: string | null },
+): Promise<VacationRequestDto> {
+  const res = await http.patch<VacationRequestDto>(`/api/vacation-requests/${id}`, body)
+  return res.data
+}
+
 export async function listAllVacationRequests(filters?: {
   status?: VacationRequestStatus
 }): Promise<VacationRequestDto[]> {
