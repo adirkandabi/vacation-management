@@ -7,8 +7,13 @@ import { buildApp } from './app';
 import { ensureSeedData } from './seed';
 
 async function bootstrap(): Promise<void> {
+  console.log('Initializing database...');
   await AppDataSource.initialize();
+  console.log('Database initialized');
+
+  console.log('Ensuring seed data...');
   await ensureSeedData();
+  console.log('Seed check complete');
 
   const app = buildApp();
 
