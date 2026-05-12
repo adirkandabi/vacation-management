@@ -1,94 +1,31 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import type { VacationRequestDto, VacationRequestStatus } from '../api/types'
-import {
-  approveVacationRequest,
-  listAllVacationRequests,
-  rejectVacationRequest,
-} from '../api/vacationRequests'
+import { onMounted } from 'vue'
 import { ensureValidatorUser, useValidatorUser } from '../composables/useValidatorUser'
+import { useValidator } from '../composables/useValidator'
 
 const { validatorUser, ready, loading: resolvingUser, error: resolveError } = useValidatorUser()
 
-const filterStatus = ref<VacationRequestStatus | 'All'>('All')
-const requests = ref<VacationRequestDto[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
-
-const rejectId = ref<number | null>(null)
-const rejectComment = ref('')
-
-const filteredLabel = computed(() => {
-  return filterStatus.value === 'All' ? 'All statuses' : filterStatus.value
-})
-
-function statusBadgeClass(status: VacationRequestDto['status']) {
-  if (status === 'Approved') return 'badge badge-approved'
-  if (status === 'Rejected') return 'badge badge-rejected'
-  return 'badge badge-pending'
-}
-
-async function refresh() {
-  if (!ready.value) return
-  loading.value = true
-  error.value = null
-  try {
-    const status = filterStatus.value === 'All' ? undefined : filterStatus.value
-    requests.value = await listAllVacationRequests({ status })
-  } catch (e: any) {
-    error.value = e?.response?.data?.error || e?.message || 'Failed to load requests'
-  } finally {
-    loading.value = false
-  }
-}
-
-async function approve(r: VacationRequestDto) {
-  if (r.status !== 'Pending') return
-  loading.value = true
-  error.value = null
-  try {
-    await approveVacationRequest(r.id)
-    await refresh()
-  } catch (e: any) {
-    error.value = e?.response?.data?.error || e?.message || 'Failed to approve'
-  } finally {
-    loading.value = false
-  }
-}
-
-function openReject(r: VacationRequestDto) {
-  rejectId.value = r.id
-  rejectComment.value = ''
-}
-
-function cancelReject() {
-  rejectId.value = null
-  rejectComment.value = ''
-}
-
-async function confirmReject() {
-  if (!rejectId.value) return
-  const comment = rejectComment.value.trim()
-  if (!comment) {
-    error.value = 'Comment is required when rejecting'
-    return
-  }
-  loading.value = true
-  error.value = null
-  try {
-    await rejectVacationRequest(rejectId.value, comment)
-    cancelReject()
-    await refresh()
-  } catch (e: any) {
-    error.value = e?.response?.data?.error || e?.message || 'Failed to reject'
-  } finally {
-    loading.value = false
-  }
-}
+const {
+  filterStatus,
+  requests,
+  loading,
+  error,
+  rejectId,
+  rejectComment,
+  filteredLabel,
+  statusBadgeClass,
+  refresh,
+  approve,
+  openReject,
+  cancelReject,
+  confirmReject,
+} = useValidator()
 
 onMounted(async () => {
   await ensureValidatorUser()
-  await refresh()
+  if (ready.value) {
+    await refresh()
+  }
 })
 </script>
 

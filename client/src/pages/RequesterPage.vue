@@ -1,117 +1,45 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { setUserIdHeader } from '../api/http'
-import { createVacationRequest, deleteVacationRequest, listMyVacationRequests } from '../api/vacationRequests'
-import { getMyUser } from '../api/users'
-import type { VacationRequestDto, UserDto } from '../api/types'
+import { onMounted, ref, watch } from 'vue'
 import { useDemoUser } from '../composables/useDemoUser'
+import { useRequester } from '../composables/useRequester'
 
 const { userId, hasUser } = useDemoUser()
 
-const me = ref<UserDto | null>(null)
-const requests = ref<VacationRequestDto[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
+const {
+  me,
+  requests,
+  loading,
+  error,
+  startDate,
+  endDate,
+  reason,
+  canSubmit,
+  refresh,
+  submit,
+  removeRequest,
+  statusBadgeClass,
+} = useRequester()
 
 const userIdText = ref(userId.value ? String(userId.value) : '')
-
-const startDate = ref('')
-const endDate = ref('')
-const reason = ref('')
-
-const canSubmit = computed(() => {
-  return hasUser.value && startDate.value !== '' && endDate.value !== ''
-})
-
-function statusBadgeClass(status: VacationRequestDto['status']) {
-  if (status === 'Approved') return 'badge badge-approved'
-  if (status === 'Rejected') return 'badge badge-rejected'
-  return 'badge badge-pending'
-}
-
-async function refresh() {
-  // When coming from the Validator page, the global axios header may still be set
-  // to the validator. Re-apply the requester identity on each refresh.
-  setUserIdHeader(userId.value)
-
-  if (!hasUser.value) {
-    me.value = null
-    requests.value = []
-    return
-  }
-  loading.value = true
-  error.value = null
-  try {
-    me.value = await getMyUser()
-    requests.value = await listMyVacationRequests()
-  } catch (e: any) {
-    error.value =
-      e?.response?.data?.error ||
-      e?.message ||
-      'Failed to load data'
-  } finally {
-    loading.value = false
-  }
-}
 
 function setUserAndLoad() {
   const raw = userIdText.value.trim()
   if (raw === '') {
     userId.value = null
-    void refresh()
+    void refresh(null)
     return
   }
   const n = Number.parseInt(raw, 10)
   userId.value = Number.isFinite(n) && n > 0 ? n : null
-  void refresh()
+  void refresh(userId.value)
 }
 
-async function submit() {
-  if (!canSubmit.value || !me.value) return
-  loading.value = true
-  error.value = null
-  try {
-    await createVacationRequest({
-      userId: me.value.id,
-      startDate: startDate.value,
-      endDate: endDate.value,
-      reason: reason.value.trim() || undefined,
-    })
-    startDate.value = ''
-    endDate.value = ''
-    reason.value = ''
-    await refresh()
-  } catch (e: any) {
-    error.value =
-      e?.response?.data?.error ||
-      e?.message ||
-      'Failed to create request'
-  } finally {
-    loading.value = false
-  }
+async function removeAndRefresh(r: any) {
+  await removeRequest(r)
+  await refresh(userId.value)
 }
 
-async function removeRequest(r: VacationRequestDto) {
-  if (r.status !== 'Pending') return
-  const ok = confirm('Delete this pending request?')
-  if (!ok) return
-
-  loading.value = true
-  error.value = null
-  try {
-    await deleteVacationRequest(r.id)
-    await refresh()
-  } catch (e: any) {
-    error.value =
-      e?.response?.data?.error ||
-      e?.message ||
-      'Failed to delete request'
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(refresh)
+onMounted(() => refresh(hasUser.value ? userId.value : null))
 
 watch(userId, (val) => {
   userIdText.value = val ? String(val) : ''
@@ -192,7 +120,7 @@ watch(userId, (val) => {
       <section class="card">
         <div class="card-head">
           <h2 class="card-title">My requests</h2>
-          <button class="btn" type="button" @click="refresh" :disabled="loading || !hasUser">
+          <button class="btn" type="button" @click="refresh(userId)" :disabled="loading || !hasUser">
             Refresh
           </button>
         </div>
@@ -234,7 +162,7 @@ watch(userId, (val) => {
                     class="btn btn-danger"
                     type="button"
                     :disabled="loading"
-                    @click="removeRequest(r)"
+                    @click="removeAndRefresh(r)"
                   >
                     Delete
                   </button>
