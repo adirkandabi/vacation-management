@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { setUserIdHeader } from '../api/http'
 import { createVacationRequest, deleteVacationRequest, listMyVacationRequests } from '../api/vacationRequests'
 import { getMyUser } from '../api/users'
 import type { VacationRequestDto, UserDto } from '../api/types'
@@ -11,6 +12,8 @@ const me = ref<UserDto | null>(null)
 const requests = ref<VacationRequestDto[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+
+const userIdText = ref(userId.value ? String(userId.value) : '')
 
 const startDate = ref('')
 const endDate = ref('')
@@ -27,6 +30,10 @@ function statusBadgeClass(status: VacationRequestDto['status']) {
 }
 
 async function refresh() {
+  // When coming from the Validator page, the global axios header may still be set
+  // to the validator. Re-apply the requester identity on each refresh.
+  setUserIdHeader(userId.value)
+
   if (!hasUser.value) {
     me.value = null
     requests.value = []
@@ -45,6 +52,18 @@ async function refresh() {
   } finally {
     loading.value = false
   }
+}
+
+function setUserAndLoad() {
+  const raw = userIdText.value.trim()
+  if (raw === '') {
+    userId.value = null
+    void refresh()
+    return
+  }
+  const n = Number.parseInt(raw, 10)
+  userId.value = Number.isFinite(n) && n > 0 ? n : null
+  void refresh()
 }
 
 async function submit() {
@@ -93,6 +112,10 @@ async function removeRequest(r: VacationRequestDto) {
 }
 
 onMounted(refresh)
+
+watch(userId, (val) => {
+  userIdText.value = val ? String(val) : ''
+})
 </script>
 
 <template>
@@ -113,15 +136,10 @@ onMounted(refresh)
             class="input"
             inputmode="numeric"
             placeholder="e.g. 1"
-            :value="userId ?? ''"
-            @input="
-              userId = ($event.target as HTMLInputElement).value
-                ? Number.parseInt(($event.target as HTMLInputElement).value, 10)
-                : null
-            "
+            v-model="userIdText"
           />
-          <button class="btn" type="button" @click="refresh" :disabled="loading">
-            Load
+          <button class="btn" type="button" @click="setUserAndLoad" :disabled="loading">
+            Set & Load
           </button>
         </div>
         <p v-if="me" class="me">

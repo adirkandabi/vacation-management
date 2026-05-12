@@ -8,6 +8,7 @@ import { RouterLink, RouterView } from 'vue-router'
       <div class="brand">Vacation Management</div>
       <nav class="nav">
         <RouterLink to="/requester" class="nav-link">Requester</RouterLink>
+        <RouterLink to="/validator" class="nav-link">Validator</RouterLink>
       </nav>
     </header>
 
